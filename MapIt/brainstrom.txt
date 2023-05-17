@@ -1,0 +1,91 @@
+function getCodeListOnActiveSheets() {
+  var activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheets = activeSpreadsheet.getSheets();
+
+  var codeList = [];
+  var sheetNames = [];
+  
+  sheets.forEach(function(sheet) {
+    if (sheet.getSheetProtection().isProtected()) {
+      // Skip protected sheets
+      return;
+    }
+    
+    var sheetName = sheet.getName();
+    sheetNames.push(sheetName);
+    
+    var sheetRange = sheet.getDataRange();
+    var values = sheetRange.getValues();
+    
+    for (var i = 0; i < values.length; i++) {
+      for (var j = 0; j < values[i].length; j++) {
+        var code = values[i][j];
+        if (code !== "") {
+          codeList.push(code);
+        }
+      }
+    }
+  });
+  
+  // Create a card to display the sheet names and code list
+  var card = CardService.newCardBuilder();
+  
+  // Create a selection input to choose a sheet
+  var selectionInput = CardService.newSelectionInput()
+    .setType(CardService.SelectionInputType.RADIO_BUTTON)
+    .setTitle('Select a sheet')
+    .setFieldName('selectedSheet')
+    .setOnChangeAction(CardService.newAction()
+      .setFunctionName('updateSheet'))
+    .addItem('Map It', 'Map It'); // Add "Map It" as a default sheet
+  
+  // Add sheet names as options in the selection input
+  sheetNames.forEach(function(sheetName) {
+    selectionInput.addItem(sheetName, sheetName);
+  });
+  
+  // Create a text paragraph to display the code list
+  var codeListParagraph = CardService.newTextParagraph()
+    .setText('Code List:\n' + codeList.join('\n'));
+  
+  // Build the card and add the selection input and code list paragraph
+  card.addSection(CardService.newCardSection()
+    .addWidget(selectionInput))
+    .addSection(CardService.newCardSection()
+    .addWidget(codeListParagraph));
+  
+  // Return the card as the response
+  return card.build();
+}
+
+function updateSheet(e) {
+  var selectedSheet = e.formInput.selectedSheet;
+  
+  var activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = activeSpreadsheet.getSheetByName(selectedSheet);
+  
+  if (!sheet) {
+    // If the sheet doesn't exist, create a new one
+    sheet = activeSpreadsheet.insertSheet(selectedSheet);
+  }
+  
+  // Update the sheet with the user's inputs
+  var userInput1 = e.formInput.userInput1;
+  var userInput2 = e.formInput.userInput2;
+  
+  // Do whatever you need to update the sheet with the user's inputs
+  // For example:
+  // sheet.getRange('A1').setValue(userInput1);
+  // sheet.getRange('B1').setValue(userInput2);
+  
+  // Return a success message
+  var successMessage = CardService.newTextParagraph()
+    .setText('Sheet updated successfully with the following inputs:\n' +
+      'User Input 1: ' + userInput1 + '\n' +
+      'User Input 2: ' + userInput2);
+  
+  return CardService.newCardBuilder()
+    .addSection(CardService.newCardSection()
+    .addWidget(successMessage))
+    .build();
+}
